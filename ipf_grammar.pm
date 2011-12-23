@@ -188,13 +188,13 @@ sub
 		 'arglist', 1,
 sub
 #line 12 "ipf.yp"
-{ main::push_arg($_[1]); }
+{ main::push_arg($_[1]); $_[1] }
 	],
 	[#Rule 8
 		 'func', 6,
 sub
 #line 15 "ipf.yp"
-{ print "@_\n"; main::do_tag($_[1], $_[5]); return ""; }
+{ main::do_tag($_[1], $_[5]); return ""; }
 	],
 	[#Rule 9
 		 'func', 4,

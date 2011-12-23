@@ -7,7 +7,6 @@ use Parse::Lex;
 use Cwd;
 use File::Basename;
 $we_are_here = File::Basename::dirname(Cwd::abs_path($0));
-print "$we_are_here/ipf_grammar.pm\n";
 require("$we_are_here/ipf_grammar.pm");
 
 @main::image_stack = ();
@@ -61,14 +60,16 @@ sub read_image
 sub do_empty_tag
 {
     my ($tag) = @_;
-    my (@args);
+    my (@args) = ();
+
 
     if ($tag eq 'FL') {
 	@args = ("horizontal");
     }
     
-    $tag_table{$tag}->(@args);    
-
+    print "\tcall $tag(@args)\n";
+    print "\t@image_stack\n";
+    $tag_table{$tag}->(@args);
 }
 
 sub do_tag 
@@ -77,9 +78,12 @@ sub do_tag
 
     my @args = split('\s*,\s*', $args);
 
-    print "CALL $tag(@args)\n";
+    print "\tcall $tag(@args)\n";
+    print "\t@image_stack\n";
 
     $tag_table{$tag}->(@args);
+
+    print "$main::error\n" if $main::error;
 }
 
 sub do_nothing
@@ -91,12 +95,11 @@ sub do_flip
 {
     my ($dir) = @_;
 
-    if ($dir =~ m/.*horiz.*/) { 
-	$main::image_stack[0]->Flop();
+    if ($dir =~ m/.*horiz.*/) {
+	$main::error = $main::image_stack[0]->Flop();
     } else {
-	$main::image_stack[0]->Flip();
-    }
-	
+	$main::error = $main::image_stack[0]->Flip();
+    }    
 }
 
 sub do_grayscale
@@ -115,7 +118,7 @@ sub do_blit
 {
     my ($x, $y) = @_;
 
-    $main::image_stack[1]->Composite(image=>$main::image_stack[0], geometry=>sprintf('0x0+%d+%d', $x, $y), compose => 'Copy');
+    $main::image_stack[1]->Composite(image=>$main::image_stack[0], geometry=>sprintf('0x0+%d+%d', $x, $y), compose => 'Over');
 
     shift @main::image_stack;
 }
@@ -126,7 +129,7 @@ sub do_mask
     $x = 0 if (!defined $x);
     $y = 0 if (!defined $y);
 
-    $main::image_stack[1]->Composite(image=>$main::image_stack[0], geometry=>sprintf('%dx%d', $x, $y), compose => 'CopyOpacity');
+    $main::image_stack[1]->Composite(image=>$main::image_stack[0], geometry=>sprintf('0x0+%d+%d', $x, $y), compose => 'CopyOpacity');
 
     shift @main::image_stack;
 }
@@ -147,7 +150,7 @@ sub push_arg
 
 sub get_args
 {
-    my $ret = join(',', @{$arg_stack[$stack_level]});
+    my $ret = join(',', reverse(@{$arg_stack[$stack_level]}));
 
     return $ret;
 }
@@ -175,12 +178,12 @@ sub parse_ipf
     
     
     my @token = (
-	'ipf:FILENAME', '[^\~\(\)\s,]+' , sub { ++$stack_level; $arglist[$stack_level] = []; $lexer->start('pf'); $_[1] },
+	'ipf:FILENAME', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
 	'pf:FUNCCALL', '~', sub {$_[1] },
 	'pf:FUNCTION_IPF', 'BLIT|MASK', sub {$lexer->start('ipf'); $_[1] },
 	'pf:FUNCTION', 'TC|RC|PAL|FL|GS|CROP|CS|R|G|B|L|SCALE|O|BL|LIGHTEN|DARKEN|BG|NOP', sub { $_[1] },
-	'ipf:OPENCIPF', '\\(', sub { $_[1] },
-	'pf:OPENC', '\\(', sub { $_[1] },
+	'ipf:OPENCIPF', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
+	'pf:OPENC', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
 	'pf:COMMA', '\s*,\s*', sub { $_[1] },
 	'pf:CLOSEC', '\\)', sub { $arglist[$stack_level] = []; --$stack_level; $_[1] },
 	'pf:ARG', '[^)\s,]+', sub { $_[1] },
