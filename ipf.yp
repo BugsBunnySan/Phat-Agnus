@@ -1,0 +1,20 @@
+%%
+ipf : image functions
+    | image
+    ;
+image : FILENAME { main::read_image($_[1]); return $_[1];  }
+;
+functions : FUNCCALL func functions
+          | FUNCCALL func       
+    ;
+
+arglist : ARG COMMA arglist { main::push_arg($_[1]); return main::get_args(); }
+        | ARG               { main::push_arg($_[1]); }
+;
+
+func : FUNCTION_IPF OPENCIPF ipf COMMA arglist CLOSEC { print "@_\n"; main::do_tag($_[1], $_[5]); return ""; }
+     | FUNCTION OPENC arglist CLOSEC { main::do_tag($_[1], $_[3]); return ""; }
+     | FUNCTION OPENC CLOSEC { main::do_empty_tag($_[1]); return ""; }
+;
+
+%%
