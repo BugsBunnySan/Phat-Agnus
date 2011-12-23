@@ -1,5 +1,9 @@
 #!/usr/bin/perl -w
 
+# Phat Agnus
+# Wesnoth ImagePathFunction WML implementation in Perl + Image Magick
+# Named in honor of a chip that blited more awesomeness onto the screen than any other chip ever
+
 use Image::Magick;
 use Data::Dumper;
 use Parse::Lex;
@@ -55,6 +59,8 @@ sub read_image
     my $i = Image::Magick->new();
     $i->Read($img);
     unshift @main::image_stack, $i;
+
+    print "\t[@image_stack]\n";
 }
 
 sub do_nothing
