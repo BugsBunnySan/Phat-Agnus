@@ -59,7 +59,8 @@ sub new {
 	{#State 6
 		ACTIONS => {
 			'FUNCTION_IPF' => 7,
-			'FUNCTION' => 8
+			'FUNCTION' => 8,
+			'FUNCTION_I' => 10
 		},
 		GOTOS => {
 			'func' => 9
@@ -67,12 +68,12 @@ sub new {
 	},
 	{#State 7
 		ACTIONS => {
-			'OPENCIPF' => 10
+			'OPENCIPF' => 11
 		}
 	},
 	{#State 8
 		ACTIONS => {
-			'OPENC' => 11
+			'OPENC' => 12
 		}
 	},
 	{#State 9
@@ -81,78 +82,118 @@ sub new {
 		},
 		DEFAULT => -5,
 		GOTOS => {
-			'functions' => 12
+			'functions' => 13
 		}
 	},
 	{#State 10
 		ACTIONS => {
-			'FILENAME' => 1
-		},
-		GOTOS => {
-			'ipf' => 13,
-			'image' => 3
+			'OPENCI' => 14
 		}
 	},
 	{#State 11
 		ACTIONS => {
-			'CLOSEC' => 15,
-			'ARG' => 16
+			'FILENAME' => 1
 		},
 		GOTOS => {
-			'arglist' => 14
+			'ipf' => 15,
+			'image' => 3
 		}
 	},
 	{#State 12
-		DEFAULT => -4
+		ACTIONS => {
+			'CLOSEC' => 17,
+			'COMMA' => 18,
+			'ARG' => 19
+		},
+		GOTOS => {
+			'arglist' => 16
+		}
 	},
 	{#State 13
-		ACTIONS => {
-			'COMMA' => 17
-		}
+		DEFAULT => -4
 	},
 	{#State 14
 		ACTIONS => {
-			'CLOSEC' => 18
+			'FILENAME' => 1
+		},
+		GOTOS => {
+			'image' => 20
 		}
 	},
 	{#State 15
-		DEFAULT => -10
-	},
-	{#State 16
 		ACTIONS => {
-			'COMMA' => 19
-		},
-		DEFAULT => -7
-	},
-	{#State 17
-		ACTIONS => {
-			'ARG' => 16
-		},
-		GOTOS => {
-			'arglist' => 20
-		}
-	},
-	{#State 18
-		DEFAULT => -9
-	},
-	{#State 19
-		ACTIONS => {
-			'ARG' => 16
+			'COMMA' => 18,
+			'ARG' => 19
 		},
 		GOTOS => {
 			'arglist' => 21
 		}
 	},
-	{#State 20
+	{#State 16
 		ACTIONS => {
 			'CLOSEC' => 22
 		}
 	},
+	{#State 17
+		DEFAULT => -12
+	},
+	{#State 18
+		ACTIONS => {
+			'COMMA' => 18,
+			'ARG' => 19
+		},
+		GOTOS => {
+			'arglist' => 23
+		}
+	},
+	{#State 19
+		ACTIONS => {
+			'COMMA' => 24
+		},
+		DEFAULT => -8
+	},
+	{#State 20
+		ACTIONS => {
+			'COMMA' => 18,
+			'ARG' => 19
+		},
+		GOTOS => {
+			'arglist' => 25
+		}
+	},
 	{#State 21
-		DEFAULT => -6
+		ACTIONS => {
+			'CLOSEC' => 26
+		}
 	},
 	{#State 22
-		DEFAULT => -8
+		DEFAULT => -11
+	},
+	{#State 23
+		DEFAULT => -6
+	},
+	{#State 24
+		ACTIONS => {
+			'COMMA' => 18,
+			'ARG' => 19
+		},
+		GOTOS => {
+			'arglist' => 27
+		}
+	},
+	{#State 25
+		ACTIONS => {
+			'CLOSEC' => 28
+		}
+	},
+	{#State 26
+		DEFAULT => -9
+	},
+	{#State 27
+		DEFAULT => -7
+	},
+	{#State 28
+		DEFAULT => -10
 	}
 ],
                                   yyrules  =>
@@ -179,41 +220,53 @@ sub
 		 'functions', 2, undef
 	],
 	[#Rule 6
-		 'arglist', 3,
+		 'arglist', 2,
 sub
 #line 11 "ipf.yp"
-{ main::push_arg($_[1]); return main::get_args(); }
+{ return main::get_args(); }
 	],
 	[#Rule 7
-		 'arglist', 1,
+		 'arglist', 3,
 sub
 #line 12 "ipf.yp"
-{ main::push_arg($_[1]); $_[1] }
+{ main::push_arg($_[1]); return main::get_args(); }
 	],
 	[#Rule 8
-		 'func', 6,
+		 'arglist', 1,
 sub
-#line 15 "ipf.yp"
-{ main::do_tag($_[1], $_[5]); return ""; }
+#line 13 "ipf.yp"
+{ main::push_arg($_[1]); $_[1] }
 	],
 	[#Rule 9
-		 'func', 4,
+		 'func', 5,
 sub
 #line 16 "ipf.yp"
-{ main::do_tag($_[1], $_[3]); return ""; }
+{ main::do_tag($_[1], $_[4]); }
 	],
 	[#Rule 10
-		 'func', 3,
+		 'func', 5,
 sub
 #line 17 "ipf.yp"
-{ main::do_empty_tag($_[1]); return ""; }
+{ main::do_tag($_[1], $_[4]); }
+	],
+	[#Rule 11
+		 'func', 4,
+sub
+#line 18 "ipf.yp"
+{ main::do_tag($_[1], $_[3]); }
+	],
+	[#Rule 12
+		 'func', 3,
+sub
+#line 19 "ipf.yp"
+{ main::do_empty_tag($_[1]); }
 	]
 ],
                                   @_);
     bless($self,$class);
 }
 
-#line 20 "ipf.yp"
+#line 22 "ipf.yp"
 
 
 1;

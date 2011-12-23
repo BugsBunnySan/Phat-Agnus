@@ -8,13 +8,15 @@ functions : FUNCCALL func functions
           | FUNCCALL func       
     ;
 
-arglist : ARG COMMA arglist { main::push_arg($_[1]); return main::get_args(); }
+arglist : COMMA arglist     { return main::get_args(); }
+        | ARG COMMA arglist { main::push_arg($_[1]); return main::get_args(); }
         | ARG               { main::push_arg($_[1]); $_[1] }
 ;
 
-func : FUNCTION_IPF OPENCIPF ipf COMMA arglist CLOSEC { main::do_tag($_[1], $_[5]); return ""; }
-     | FUNCTION OPENC arglist CLOSEC { main::do_tag($_[1], $_[3]); return ""; }
-     | FUNCTION OPENC CLOSEC { main::do_empty_tag($_[1]); return ""; }
+func : FUNCTION_IPF OPENCIPF ipf arglist CLOSEC { main::do_tag($_[1], $_[4]); }
+     | FUNCTION_I OPENCI image arglist CLOSEC { main::do_tag($_[1], $_[4]); }
+     | FUNCTION OPENC arglist CLOSEC { main::do_tag($_[1], $_[3]); }
+     | FUNCTION OPENC CLOSEC { main::do_empty_tag($_[1]); }
 ;
 
 %%
