@@ -29,16 +29,23 @@ require("$we_are_here/ipf_grammar.pm");
 @main::arg_stack = ();
 $main::stack_level = 0;
 
-my ($ipf, $out_image) = @ARGV;
+my $wesnoth_path;
+@main::wesnoth_paths = ();
 
-#my $wesnoth_path = $ENV{"WESNOTH_PATH"};
-#my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
+if (defined $ENV{"WESNOTH_PATH"}) {
+    $wesnoth_path = $ENV{"WESNOTH_PATH"};
+} else {
+    $wesnoth_path = '/usr/local/share/wesnoth';
+}
+
+push @main::wesnoth_paths, join('/', $wesnoth_path, 'images');
+push @main::wesnoth_paths, join('/', $wesnoth_path, 'data', 'core', 'images');
+my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
+parse_tc_cfg($tc_file);
 
 %tag_table = (TC => \&to_do_nothing,
 	      RC => \&to_do_nothing,
 	      PAL => \&to_do_nothing,
-	      LIGHTEN => \&to_do_nothing,
-	      DARKEN => \&to_do_nothing,
 	      NOP => \&do_nothing,
 	      CS => \&do_color_shift,
 	      R => \&do_r_shift,
@@ -52,11 +59,13 @@ my ($ipf, $out_image) = @ARGV;
 	      CROP => \&do_crop,
 	      SCALE => \&do_scale,
 	      BLIT => \&do_blit,
+	      LIGHTEN => \&do_lighten,
+	      DARKEN => \&do_darken,
 	      MASK => \&do_mask,
 	      BG  => \&do_background,
     );
 
-#parse_tc_cfg($tc_file);
+my ($ipf, $out_image) = @ARGV;
 
 parse_ipf($ipf);
 
@@ -65,9 +74,29 @@ print "@main::image_stack\n";
 # just png, or just the png extension defaults to 24bit png, i.e. just rgb, which fills the alpha with 1
 $main::image_stack[0]->Write(filename => "png32:$out_image");
 
-sub read_image
+# searches the binary_paths for the img
+#returns first one found
+sub find_img
 {
     my ($img) = @_;
+
+    for $p (@main::wesnoth_paths) {
+	$test_img = join('/', $p, $img);
+	return $test_img if (-f $test_img);
+    }
+
+    return undef;
+}
+
+sub read_image
+{
+    my ($uimg) = @_;
+
+    if (! -f $uimg) {
+	$img = find_img($uimg);
+    } else {
+	$img = $uimg;
+    }
 
     my $i = Image::Magick->new();
     $main::error = $i->Read($img);
@@ -227,6 +256,20 @@ sub do_blit
     shift @main::image_stack;
 }
 
+sub do_lighten
+{
+    read_image("misc/tod-bright.png");
+
+    do_blit(0, 0);
+}
+
+sub do_darken
+{
+    read_image("misc/tod-dark.png");
+
+    do_blit(0, 0);
+}
+
 sub do_mask
 {
     my ($x, $y) = @_;
@@ -309,8 +352,8 @@ sub parse_ipf
 	'i:FILENAME_I', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
 	'pf:FUNCCALL', '~', sub {$_[1] },
 	'pf:FUNCTION_IPF', 'BLIT|MASK', sub {$lexer->start('ipf'); $_[1] },
-	'pf:FUNCTION_I', 'L', sub {$lexer->start('i'); $_[1] },
 	'pf:FUNCTION', 'TC|RC|PAL|FL|GS|CROP|CS|R|G|B[^LG]|SCALE|O|BL|LIGHTEN|DARKEN|BG|NOP', sub { $_[1] },
+	'pf:FUNCTION_I', 'L', sub {$lexer->start('i'); $_[1] },
 	'ipf:OPENC_IPF', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
 	'i:OPENC_I', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
 	'pf:OPENC', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
@@ -341,12 +384,16 @@ sub parse_tc_cfg
 	chomp($line);
 	$line =~ s/#.+$//; # ignore comments
 	$line =~ s/^\s*|\s*$//; # strip whitespace
-	next if ($line =~ m/^\s*$/); # ignore empty lines
+	next if ($line =~ m/^$/); # now ignore empty lines
 	if ($line =~ s/(\[\w+\])\s*//) {
 	    $tag = {_ => $1};
 	    push @state, $tag;
 	} elsif ($line =~ s/(\[\/\w+\])\s*//) {
-	    $parsed->{$tag->{_}}->{$tag->{id}} = pop @state;
+	    if ($tag->{id}) {
+		$parsed->{$tag->{_}}->{$tag->{id}} = pop @state;
+	    } else {
+		$parsed->{$tag->{_}} = pop @state;
+	    }
 	} elsif ($line =~ s/(\w+)\s*=\s*_?\s*(\S+)$//) {
 	    $tag->{$1} = $2;
 	} else {
@@ -355,7 +402,7 @@ sub parse_tc_cfg
     }
     close(TC_CFG);
 
-    #print Dumper($parsed);
+    print Dumper($parsed);
     return $parsed;
 }
 
