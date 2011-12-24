@@ -70,8 +70,10 @@ sub read_image
     my ($img) = @_;
 
     my $i = Image::Magick->new();
-    $i->Read($img);
+    $main::error = $i->Read($img);
     unshift @main::image_stack, $i;
+
+    warn $main::error if $main::error;
 
     print "\t[@image_stack]\n";
 }
@@ -105,7 +107,7 @@ sub do_color_shift
                    0,  0,  0,  0,  0,  1,
 	];
 
-    $main::image_stack[0]->ColorMatrix(matrix => $matrix);
+    $main::error = $main::image_stack[0]->ColorMatrix(matrix => $matrix);
 }
 
 sub do_r_shift
@@ -131,7 +133,7 @@ sub do_b_shift
 
 sub do_grayscale
 {
-    $main::image_stack[0]->Quantize(colorspace => 'gray');
+    $main::error = $main::image_stack[0]->Quantize(colorspace => 'gray');
 }
 
 sub do_lightmap
@@ -178,7 +180,7 @@ sub do_opacity
                    0,  0,  0,  0,  0,  0,
 	];
 
-    $main::image_stack[0]->ColorMatrix(matrix => $matrix);
+    $main::error = $main::image_stack[0]->ColorMatrix(matrix => $matrix);
 }
 
 sub do_blur
@@ -187,7 +189,7 @@ sub do_blur
     my ($w, $h) = $main::image_stack[0]->Get('columns', 'rows');
 
     # this looks almost, but not quite, entirely unlike the wesnoth blur, the amount is about the same...
-    $main::image_stack[0]->Blur(geometry => sprintf('%dx%d', $w, $h), channel => 'all', radius => $radius);
+    $main::error = $main::image_stack[0]->Blur(geometry => sprintf('%dx%d', $w, $h), channel => 'all', radius => $radius);
 }
 
 sub do_flipflop
@@ -205,21 +207,21 @@ sub do_crop
 {
     my ($x, $y, $w, $h) = @_;
 
-    $main::image_stack[0]->Crop(geometry => sprintf('%dx%d+%d+%d', $x, $y, $w, $h));
+    $main::error = $main::image_stack[0]->Crop(geometry => sprintf('%dx%d+%d+%d', $w, $h, $x, $y));
 }
 
 sub do_scale
 {
     my ($w, $h) = @_;
 
-    $main::image_stack[0]->Scale(width => $w, height => $h);
+    $main::error = $main::image_stack[0]->Scale(width => $w, height => $h);
 }
 
 sub do_blit
 {
     my ($x, $y) = @_;
 
-    $main::image_stack[1]->Composite(image => $main::image_stack[0], 
+    $main::error = $main::image_stack[1]->Composite(image => $main::image_stack[0], 
 				     geometry => sprintf('0x0+%d+%d', $x, $y), compose => 'Over');    
     
     shift @main::image_stack;
@@ -231,8 +233,8 @@ sub do_mask
     $x = 0 if (!defined $x);
     $y = 0 if (!defined $y);
 
-    $main::image_stack[1]->Composite(image => $main::image_stack[0], 
-				     geometry => sprintf('0x0+%d+%d', $x, $y), compose => 'CopyOpacity', mask => $main::image_stack[1]);
+    $main::error = $main::image_stack[1]->Composite(image => $main::image_stack[0], 
+						    geometry => sprintf('0x0+%d+%d', $x, $y), compose => 'CopyOpacity', mask => $main::image_stack[1]);
 
     shift @main::image_stack;
 }
@@ -246,8 +248,8 @@ sub do_background
     $bg_img->Set(size => sprintf('%dx%d', $w, $h));
     $bg_img->ReadImage(sprintf('canvas:rgb(%d, %d, %d)', $r, $g, $b));
 
-    $bg_img->Composite(image => $main::image_stack[0], 
-		       geometry => '0x0+0+0', compose => 'Over');
+    $main::error = $bg_img->Composite(image => $main::image_stack[0], 
+				      geometry => '0x0+0+0', compose => 'Over');
 
     $main::image_stack[0] = $bg_img;    
 }
@@ -265,7 +267,7 @@ sub do_tag
 
     $arg_stack[$stack_level] = []; --$stack_level;
 
-    print "$main::error\n" if $main::error;
+    warn $main::error if $main::error;
 }
 
 sub push_arg
