@@ -1,0 +1,185 @@
+##############
+# Phat Agnus #
+##############
+
+Wesnoth ImagePathFunction WML aproximaplementation in Perl + Image Magick
+
+Named in honor of a chip that blited more awesomeness onto the screen than any other chip ever
+
+Copyright (c) 2011 Sebastian Haas
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY.
+
+ See the COPYING file for more details.
+
+Contents:
+1. What does it do?
+2. Requirements
+3. Installation
+4. How do I use it?
+5. Examples
+6. TODO
+7. Implementation details
+
+1. What does it do?
+###################
+
+Implements the ImageFunctionPath WML (ipfWML), specified here:
+
+http://wiki.wesnoth.org/ImagePathFunctionWML
+
+in a standalone tool to aid UMC creators in their quest for awesome addons.
+
+Currently missing are all the palette based operators (TC, RC, PAL, LIGHTEN, DARKEN).
+If these are encountered by the program, they won't give any errors, 
+they'll just not do anything yet.
+
+2. Requirements
+###############
+
+Needs a realtivly recent versions of Perl, ImageMagick&PerlMagick and Perl::Parse::Lex,
+optionaly Perl::Parse::Yapp (if you want to rebuild the grammar file).
+
+For reference, this was build on, with and tested against:
+On: 
+    Fedora release 15 (Lovelock)
+With:
+    Perl v5.12.4 (perl-5.12.4-162.fc15.x86_64)
+    ImageMagick 6.6.5-10 (ImageMagick.x86_64)
+    PerlMagick 6.6.5-10 (ImageMagick-perl.x86_64)
+    Perl::Parse::Lex 2.19 (perl-Parse-Yapp.noarch)
+    Perl::Parse::Yapp 1.05 (perl-ParseLex.noarch)
+Tested against:
+    Battle for Wesnoth 1.9.13 source build
+
+It should be straight forward to get the packages with yum on recent redhat-alike distros
+and not difficult to get the packages for debian-alike distros with apt/synaptic/...
+
+For Windows I would recommend Strawberry Perl:
+
+http://strawberryperl.com/
+
+It's pretty stable, recent and allows you to use the cpan tool to install additional
+packages. Building the perlmagick module might be a bit of work though.
+
+Alternativly use ActivePerl
+
+http://www.activestate.com/activeperl
+
+since the windows ImageMagick distribution ships with a 'ppm' perlmagick module for
+ActivePerl. It's also stable and recent but it can't (afaik) use of cpan directly.
+
+Alternativly alternative: reboot into linux ;)
+
+
+3. Installation
+###############
+
+a) Transport Manifest:
+    Required files: phat_agnus.pl, ipf_grammar.pm
+    Optional files: ipf.yp, Makefile
+    Misc files: README, COPYING
+
+b) phat_agnus.pl and ipf_grammar.pm need to be in the same directory (maybe
+   somehwere in your PATH if you feel like it)
+
+c) If you want to rebuild the ipf_grammar.pm from the ipf.yp source, you'll
+   need the Parse::Yapp perl module installed. 
+   The Makefile contains the simple commandline which builds it. 
+   Just typing 'make' should work, or copy the commandline from the file and
+   execute it manually
+
+4. How do I use it?
+###################
+
+4.1 Synopsis:
+
+phat_agnus.pl <ipfWML> <outfile>
+
+<ipfWML>   is any valid ipfWML string (you'll propably want to enclose
+           it in 'single quotes', because of all the filenames and '~' and '()').
+<outfile>  the result of the ipfWML evaluation is written into this file (as a png,
+           regardless of file extension)
+
+4.2 ipfwML
+ipfWML always starts with an image filename. 
+Image modifiers can be appended, some of which take ipfWML as arguments.
+After each modifier, another modifier can be appended, and so on.
+
+4.3 Notes
+Phat Agnus doesn't impose any limits on the length of the ipfWML string,
+although your shell might. Common cut off lengths are around 32767 characters
+on most *NIX systems and 8191 characters on windows.
+
+5. Examples
+###########
+5.1 The simples example just copies input to output
+
+phat_agnus.pl foo.png bar.png
+
+5.2 Put a wesnoth general in front of a tent
+Assuming you are in .../path/to/wesnoth/data/core/images, this string:
+
+"scenery/tent-fancy-red.png~BLIT(units/human-loyalists/general-leading.png~RC(magenta>red))"
+
+puts a recolored loyalist general in front of a fancy tent. (Since ~RC isn't implemented yet,
+the recoloring bit is currently a lie...)
+
+5.3 Build the icon for WesNorth And South
+Again assuming you're in the .../data/core/images subdir of your wesnoth installation, this:
+
+"misc/blank-hex.png~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(0,-255,-255)~FL(), 5, 5)~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(-255,-255,0), 44, 5)~BLIT(wesnoth-icon.png~SCALE(24, 24), 23, 2)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>red)~SCALE(48,48), 0, 13)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>blue)~SCALE(48,48)~FL(), 24, 13)"
+
+builds a nice icon of two cavaliers on rearing horses facing each other underneath 
+the wesnoth icon. (And again, since ~RC isn't done yet, the two cavaliers will both be
+on Team Telekom ;) )
+
+6. TODO
+#######
+Implement the remaining modifiers
+Recheck the blit and scale functions for position mismatches with wesnoth
+Implement something like the [binary_path] tags from wesnoth campaigns to specify
+  a list of directories to scan for images
+
+7. Implementation details
+#########################
+The ipf string is parsed using a grammar build with yapp. The parsing executes the
+modifiers as soon as they are fully specified and loads image immediatly as their
+filenames are encounterd. Once the parsing is done, the result is written to the 
+output file.
+So one could think of Phat-Agnus as an ipfWML interpreter. 
+
+Two stacks are used to interpret the ipfWML string (actually these are reversed stacks,
+since items are unshifted/shifted onto/off them, to keep the indexing of the top of
+the stack simple (since that's just item 0 then)).
+
+7.1 The image-stack
+Everytime an imagefilename is encountered during parsing, it is read and pushed onto this
+stack. Most modifiers operate directly on the top of the stack image, while some use some
+kind of compositing of the top two images and pop the topmost image of the stack.
+
+At the end of the ipfWML interpretation, the stack should contain exactly one image. If not
+something went wrong somewhere, but in anycase, the topofstack image is written to the
+output file, if nothing went so seriously wrong that the interpretation run was interupted
+somewhere along the way.
+
+7.2 The arguments list stack
+Everytime a modifier's opening '(' is encountered, the args stack level is increased.
+The following arguments are pushed onto a list on the top of the stack. Once the closing
+')' is encountered the function associated with the modifier is called and the args list
+is pop'd from the stack.
+
+7.3 The grammar
+The grammar is pretty simple, and maybe using yapp here is a bit of an overkill, but
+using regexes to parse nested, potentially recursive languages is no fun and one would
+probably end up implementing something like yapp's output by hand and waste a lot of time.
+
+The parser doesn't know anything about the individual modifiers. The recognition of the tags
+is of course neccessary, but is kept to the lexer. Everytime a modifier is completly parsed,
+an intermediate function (main::do_tag) is called, which uses a function table to execute the
+function associated with the modifier.
+

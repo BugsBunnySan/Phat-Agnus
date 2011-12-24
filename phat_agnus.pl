@@ -1,9 +1,18 @@
 #!/usr/bin/perl -w
 
 # Phat Agnus
-# Wesnoth ImagePathFunction WML aproximaplementation in Perl + Image Magick
+# Wesnoth ImagePathFunction WML aproximaplementation
 # Named in honor of a chip that blited more awesomeness onto the screen than any other chip ever
-# (c) 2011 Sebastian Haas
+#
+# Copyright (c) 2011 Sebastian Haas
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY.
+
+# See the COPYING file for more details.
 
 use Image::Magick;
 use Data::Dumper;
@@ -20,16 +29,16 @@ require("$we_are_here/ipf_grammar.pm");
 @main::arg_stack = ();
 $main::stack_level = 0;
 
-my $wesnoth_path = $ENV{"WESNOTH_PATH"};
 my ($ipf, $out_image) = @ARGV;
 
-my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
+#my $wesnoth_path = $ENV{"WESNOTH_PATH"};
+#my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
 
-%tag_table = (TC => \&do_nothing,
-	      RC => \&do_nothing,
-	      PAL => \&do_nothing,
-	      LIGHTEN => \&do_nothing,
-	      DARKEN => \&do_nothing,
+%tag_table = (TC => \&to_do_nothing,
+	      RC => \&to_do_nothing,
+	      PAL => \&to_do_nothing,
+	      LIGHTEN => \&to_do_nothing,
+	      DARKEN => \&to_do_nothing,
 	      NOP => \&do_nothing,
 	      CS => \&do_color_shift,
 	      R => \&do_r_shift,
@@ -47,7 +56,7 @@ my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
 	      BG  => \&do_background,
     );
 
-parse_tc_cfg($tc_file);
+#parse_tc_cfg($tc_file);
 
 parse_ipf($ipf);
 
@@ -65,6 +74,13 @@ sub read_image
     unshift @main::image_stack, $i;
 
     print "\t[@image_stack]\n";
+}
+
+sub to_do_nothing
+{
+    print "not implemented yet\n";
+
+    return;
 }
 
 sub do_nothing
