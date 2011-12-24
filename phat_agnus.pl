@@ -1,8 +1,9 @@
 #!/usr/bin/perl -w
 
 # Phat Agnus
-# Wesnoth ImagePathFunction WML implementation in Perl + Image Magick
+# Wesnoth ImagePathFunction WML aproximaplementation in Perl + Image Magick
 # Named in honor of a chip that blited more awesomeness onto the screen than any other chip ever
+# (c) 2011 Sebastian Haas
 
 use Image::Magick;
 use Data::Dumper;
@@ -13,7 +14,9 @@ use File::Basename;
 $we_are_here = File::Basename::dirname(Cwd::abs_path($0));
 require("$we_are_here/ipf_grammar.pm");
 
+# new images in nested ipf are stacked here (and removed from the argument list)
 @main::image_stack = ();
+# stack function call args in arrays per nesting level and function call
 @main::arg_stack = ();
 $main::stack_level = 0;
 
@@ -25,23 +28,23 @@ my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
 %tag_table = (TC => \&do_nothing,
 	      RC => \&do_nothing,
 	      PAL => \&do_nothing,
-	      L => \&do_nothing,
-	      O => \&do_nothing,
 	      LIGHTEN => \&do_nothing,
 	      DARKEN => \&do_nothing,
-	      BG  => \&do_nothing,
-	      GS => \&do_grayscale,
+	      NOP => \&do_nothing,
 	      CS => \&do_color_shift,
 	      R => \&do_r_shift,
 	      G => \&do_g_shift,
 	      B => \&do_b_shift,
+	      GS => \&do_grayscale,
+	      L => \&do_lightmap,
+	      O => \&do_opacity,
 	      BL => \&do_blur,
-	      FL => \&do_flip,
+	      FL => \&do_flipflop,
 	      CROP => \&do_crop,
 	      SCALE => \&do_scale,
 	      BLIT => \&do_blit,
 	      MASK => \&do_mask,
-	      NOP => \&do_nothing,
+	      BG  => \&do_background,
     );
 
 parse_tc_cfg($tc_file);
@@ -50,7 +53,8 @@ parse_ipf($ipf);
 
 print "@main::image_stack\n";
 
-$main::image_stack[0]->Write(filename => "$out_image");
+# just png, or just the png extension defaults to 24bit png, i.e. just rgb, which fills the alpha with 1
+$main::image_stack[0]->Write(filename => "png32:$out_image");
 
 sub read_image
 {
@@ -86,7 +90,6 @@ sub do_color_shift
 	];
 
     $main::image_stack[0]->ColorMatrix(matrix => $matrix);
-
 }
 
 sub do_r_shift
@@ -115,20 +118,67 @@ sub do_grayscale
     $main::image_stack[0]->Quantize(colorspace => 'gray');
 }
 
+sub do_lightmap
+{
+    my ($r, $g, $b, $a);
+    my ($w, $h) = $main::image_stack[1]->Get('columns', 'rows');
+
+    $main::image_stack[0]->Scale(width => $w, height => $h);
+
+    my @lightmap_pixels = $main::image_stack[0]->GetPixels(width => $w, height => $h, map => 'RGBA', normalize => 'true');
+    my @image_pixels    = $main::image_stack[1]->GetPixels(width => $w, height => $h, map => 'RGBA', normalize => 'true');
+
+    for ($iw = 0; $iw < $w; ++$iw) {
+	for ($ih = 0; $ih < $h; ++$ih) {
+	    my $idx = ($iw * 4) + ($ih * $w * 4); # * 4 => RGBA
+	    # "The formula is (x-128)*2, which means that 0 gives -256, 128 gives 0 and 255 gives 254 (wesnoth wiki)"
+	    $r = $image_pixels[$idx+0] + ($lightmap_pixels[$idx+0] - 0.50196) * 2;
+	    $g = $image_pixels[$idx+1] + ($lightmap_pixels[$idx+1] - 0.50196) * 2;
+	    $b = $image_pixels[$idx+2] + ($lightmap_pixels[$idx+2] - 0.50196) * 2;
+	    $a = $image_pixels[$idx+3];
+	    $r = $r > 1 ? 1 : $r < 0 ? 0 : $r;
+	    $g = $g > 1 ? 1 : $g < 0 ? 0 : $g;
+	    $b = $b > 1 ? 1 : $b < 0 ? 0 : $b;
+	    $main::image_stack[1]->SetPixel(geometry => sprintf('0x0+%d+%d', $iw, $ih), color => [$r, $g, $b, $a]);
+	}
+    }
+    
+    shift @main::image_stack;
+}
+
+sub do_opacity
+{
+    my ($o) = @_;
+
+    if ($o =~ m/(\d+)%/) {
+	$o /= 100.0;
+    }
+
+    my $matrix = [ 1,  0,  0,  0,  0,  0,
+		   0,  1,  0,  0,  0,  0,
+		   0,  0,  1,  0,  0,  0,
+		   0,  0,  0, $o,  0,  0,
+                   0,  0,  0,  0,  1,  0,
+                   0,  0,  0,  0,  0,  0,
+	];
+
+    $main::image_stack[0]->ColorMatrix(matrix => $matrix);
+}
+
 sub do_blur
 {
     my ($radius) = @_;
     my ($w, $h) = $main::image_stack[0]->Get('columns', 'rows');
 
-    # this looks not at all like the wesnoth blur, the amount is about the same, but they use a weird blur function
+    # this looks almost, but not quite, entirely unlike the wesnoth blur, the amount is about the same...
     $main::image_stack[0]->Blur(geometry => sprintf('%dx%d', $w, $h), channel => 'all', radius => $radius);
 }
 
-sub do_flip
+sub do_flipflop
 {
     my ($dir) = @_;
 
-    if ($dir =~ m/.*horiz.*/) {
+    if ((!defined $dir) || ($dir =~ m/.*horiz.*/)) {
 	$main::error = $main::image_stack[0]->Flop();
     } else {
 	$main::error = $main::image_stack[0]->Flip();
@@ -146,16 +196,16 @@ sub do_scale
 {
     my ($w, $h) = @_;
 
-    $main::image_stack[0]->Scale(width=>$w, height=>$h);
+    $main::image_stack[0]->Scale(width => $w, height => $h);
 }
 
 sub do_blit
 {
     my ($x, $y) = @_;
 
-    $main::image_stack[1]->Composite(image=>$main::image_stack[0], 
-				     geometry=>sprintf('0x0+%d+%d', $x, $y), compose => 'Over');
-
+    $main::image_stack[1]->Composite(image => $main::image_stack[0], 
+				     geometry => sprintf('0x0+%d+%d', $x, $y), compose => 'Over');    
+    
     shift @main::image_stack;
 }
 
@@ -165,38 +215,32 @@ sub do_mask
     $x = 0 if (!defined $x);
     $y = 0 if (!defined $y);
 
-    $main::image_stack[1]->Composite(image=>$main::image_stack[0], 
-				     geometry=>sprintf('0x0+%d+%d', $x, $y), compose => 'CopyOpacity', mask => $main::image_stack[1]);
+    $main::image_stack[1]->Composite(image => $main::image_stack[0], 
+				     geometry => sprintf('0x0+%d+%d', $x, $y), compose => 'CopyOpacity', mask => $main::image_stack[1]);
 
     shift @main::image_stack;
 }
 
-sub do_empty_tag
+sub do_background
 {
-    my ($tag) = @_;
-    my (@args) = ();
+    my ($r, $g, $b) = @_;
+    my ($w, $h) = $main::image_stack[0]->Get('columns', 'rows');
 
+    my $bg_img = Image::Magick->new();
+    $bg_img->Set(size => sprintf('%dx%d', $w, $h));
+    $bg_img->ReadImage(sprintf('canvas:rgb(%d, %d, %d)', $r, $g, $b));
 
-    if ($tag eq 'FL') {
-	@args = ("horizontal");
-    }
-    
-    print "\t$stack_level call $tag(@args)\n";
-    print "\t[@image_stack]\n";
+    $bg_img->Composite(image => $main::image_stack[0], 
+		       geometry => '0x0+0+0', compose => 'Over');
 
-    $tag_table{$tag}->(@args);
-    
-    $arg_stack[$stack_level] = []; --$stack_level;
-
-    print "$main::error\n" if $main::error;
-
+    $main::image_stack[0] = $bg_img;    
 }
 
 sub do_tag 
 {
     my ($tag, $args) = @_;
-
-    my @args = split('\s*,\s*', $args);
+    my @args = (); 
+    @args = split('\s*,\s*', $args) if $args;
 
     print "\t$stack_level call $tag(@args)\n";
     print "\t[@image_stack]\n";
@@ -243,11 +287,14 @@ sub parse_ipf
     
     
     my @token = (
-	'ipf:FILENAME', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
+	'ipf:FILENAME_IPF', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
+	'i:FILENAME_I', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
 	'pf:FUNCCALL', '~', sub {$_[1] },
 	'pf:FUNCTION_IPF', 'BLIT|MASK', sub {$lexer->start('ipf'); $_[1] },
-	'pf:FUNCTION', 'TC|RC|PAL|FL|GS|CROP|CS|R|G|B[^LG]|L[^I]|SCALE|O|BL|LIGHTEN|DARKEN|BG|NOP', sub { $_[1] },
-	'ipf:OPENCIPF', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
+	'pf:FUNCTION_I', 'L', sub {$lexer->start('i'); $_[1] },
+	'pf:FUNCTION', 'TC|RC|PAL|FL|GS|CROP|CS|R|G|B[^LG]|SCALE|O|BL|LIGHTEN|DARKEN|BG|NOP', sub { $_[1] },
+	'ipf:OPENC_IPF', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
+	'i:OPENC_I', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
 	'pf:OPENC', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
 	'pf:COMMA', '\s*,\s*', sub { $_[1] },
 	'pf:CLOSEC', '\\)', sub { $_[1] },
@@ -255,7 +302,7 @@ sub parse_ipf
 	'ERROR', '.*', sub { die "no idea what $_[1] means\n" }
 	);
 
-    Parse::Lex->exclusive('pf', 'ipf');
+    Parse::Lex->exclusive('pf', 'ipf', 'i');
     $lexer = Parse::Lex->new(@token);
     
     $lexer->from($ipf);
