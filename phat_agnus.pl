@@ -20,8 +20,9 @@ use Parse::Lex;
 
 use Cwd;
 use File::Basename;
-$we_are_here = File::Basename::dirname(Cwd::abs_path($0));
-require("$we_are_here/ipf_grammar.pm");
+$main::we_are_here = File::Basename::dirname(Cwd::abs_path($0));
+require("$main::we_are_here/ipf_grammar.pm");
+#require("$main::we_are_here/paula.pm");
 
 # new images in nested ipf are stacked here (and removed from the argument list)
 @main::image_stack = ();
@@ -41,12 +42,12 @@ if (defined $ENV{"WESNOTH_PATH"}) {
 push @main::wesnoth_paths, join('/', $wesnoth_path, 'images');
 push @main::wesnoth_paths, join('/', $wesnoth_path, 'data', 'core', 'images');
 my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
-parse_tc_cfg($tc_file);
+#parse_tc_cfg($tc_file);
 
 %tag_table = (TC => \&to_do_nothing,
-	      RC => \&to_do_nothing,
 	      PAL => \&to_do_nothing,
 	      NOP => \&do_nothing,
+	      RC => \&do_recolor,
 	      CS => \&do_color_shift,
 	      R => \&do_r_shift,
 	      G => \&do_g_shift,
@@ -75,7 +76,7 @@ print "@main::image_stack\n";
 $main::image_stack[0]->Write(filename => "png32:$out_image");
 
 # searches the binary_paths for the img
-#returns first one found
+# returns first one found
 sub find_img
 {
     my ($img) = @_;
@@ -109,7 +110,7 @@ sub read_image
 
 sub to_do_nothing
 {
-    print "not implemented yet\n";
+    print "\t<<not implemented yet>>\n";
 
     return;
 }
@@ -117,6 +118,17 @@ sub to_do_nothing
 sub do_nothing
 {
     return;
+}
+
+sub do_recolor
+{
+    my ($mapstr) = @_;
+
+    my ($map_src, $map_tgt) = split('>', $mapstr);
+
+    #my $mapping = mk_color_range($map_src, $map_tgt);
+
+    
 }
 
 sub do_color_shift
@@ -325,8 +337,10 @@ sub get_args
     return join(',', reverse(@{$arg_stack[$stack_level]}));
 }
 
-sub ipf_lexor
+sub parse_lexer
 {
+    my $lexer = $_[0]->YYLexer();
+
     my ($token) = $lexer->next;
     if ($lexer->eoi) {
 	return ('', undef);
@@ -336,17 +350,23 @@ sub ipf_lexor
     }
 }
 
-sub ipf_error
+sub parse_error
 {
-    print STDERR "Error parsing line $.\n";
+    my ($cur_token, $cur_value, @expected);
+    $cur_token = $_[0]->YYCurtok();
+    $cur_value = $_[0]->YYCurval();
+    @expected  = $_[0]->YYExpect;
+
+    $cur_value = '<undef>' if (!defined $cur_value);
+
+    print STDERR "\tError parsing: Expected (@expected); got: $cur_token '$cur_value'\n";
 }
 
 sub parse_ipf
 {
-    my ($ipf) = @_;
+    my ($ipf) = @_;  
+    my $lexer = $_[0]->YYLexer();
 
-    
-    
     my @token = (
 	'ipf:FILENAME_IPF', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
 	'i:FILENAME_I', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
@@ -370,39 +390,5 @@ sub parse_ipf
     $lexer->start('ipf');
     
     $parser = new ipf_grammar();
-    $parser->YYParse(yylex => \&ipf_lexor, yyerror => \&ipf_error);
+    $parser->YYParse(yylex => \&parse_lexer, yyerror => \&parse_error);
 }
-
-sub parse_tc_cfg
-{
-    my ($file) = @_;
-
-    $parsed = {};
-
-    open(TC_CFG, "<$file") or return $parsed;
-    while ($line = <TC_CFG>) {
-	chomp($line);
-	$line =~ s/#.+$//; # ignore comments
-	$line =~ s/^\s*|\s*$//; # strip whitespace
-	next if ($line =~ m/^$/); # now ignore empty lines
-	if ($line =~ s/(\[\w+\])\s*//) {
-	    $tag = {_ => $1};
-	    push @state, $tag;
-	} elsif ($line =~ s/(\[\/\w+\])\s*//) {
-	    if ($tag->{id}) {
-		$parsed->{$tag->{_}}->{$tag->{id}} = pop @state;
-	    } else {
-		$parsed->{$tag->{_}} = pop @state;
-	    }
-	} elsif ($line =~ s/(\w+)\s*=\s*_?\s*(\S+)$//) {
-	    $tag->{$1} = $2;
-	} else {
-	    next;
-	}
-    }
-    close(TC_CFG);
-
-    print Dumper($parsed);
-    return $parsed;
-}
-
