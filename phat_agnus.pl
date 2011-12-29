@@ -16,13 +16,11 @@
 
 use Image::Magick;
 use Data::Dumper;
-use Parse::Lex;
 
 use Cwd;
 use File::Basename;
 $main::we_are_here = File::Basename::dirname(Cwd::abs_path($0));
-require("$main::we_are_here/ipf_grammar.pm");
-#require("$main::we_are_here/paula.pm");
+require("$main::we_are_here/paula.pm");
 
 # new images in nested ipf are stacked here (and removed from the argument list)
 @main::image_stack = ();
@@ -42,7 +40,7 @@ if (defined $ENV{"WESNOTH_PATH"}) {
 push @main::wesnoth_paths, join('/', $wesnoth_path, 'images');
 push @main::wesnoth_paths, join('/', $wesnoth_path, 'data', 'core', 'images');
 my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
-#parse_tc_cfg($tc_file);
+
 
 %tag_table = (TC => \&to_do_nothing,
 	      PAL => \&to_do_nothing,
@@ -67,7 +65,8 @@ my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
     );
 
 my ($ipf, $out_image) = @ARGV;
-
+Paula::init_lexer();
+parse_tc_cfg($tc_file);
 parse_ipf($ipf);
 
 print "@main::image_stack\n";
@@ -337,58 +336,38 @@ sub get_args
     return join(',', reverse(@{$arg_stack[$stack_level]}));
 }
 
-sub parse_lexer
-{
-    my $lexer = $_[0]->YYLexer();
-
-    my ($token) = $lexer->next;
-    if ($lexer->eoi) {
-	return ('', undef);
-    } else {
-	print $token->name .' '. $token->text ."\n";
-	return ($token->name, $token->text);
-    }
-}
-
-sub parse_error
-{
-    my ($cur_token, $cur_value, @expected);
-    $cur_token = $_[0]->YYCurtok();
-    $cur_value = $_[0]->YYCurval();
-    @expected  = $_[0]->YYExpect;
-
-    $cur_value = '<undef>' if (!defined $cur_value);
-
-    print STDERR "\tError parsing: Expected (@expected); got: $cur_token '$cur_value'\n";
-}
-
 sub parse_ipf
 {
     my ($ipf) = @_;  
-    my $lexer = $_[0]->YYLexer();
 
-    my @token = (
-	'ipf:FILENAME_IPF', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
-	'i:FILENAME_I', '[^\~\(\)\s,]+' , sub { $lexer->start('pf'); $_[1] },
-	'pf:FUNCCALL', '~', sub {$_[1] },
-	'pf:FUNCTION_IPF', 'BLIT|MASK', sub {$lexer->start('ipf'); $_[1] },
-	'pf:FUNCTION', 'TC|RC|PAL|FL|GS|CROP|CS|R|G|B[^LG]|SCALE|O|BL|LIGHTEN|DARKEN|BG|NOP', sub { $_[1] },
-	'pf:FUNCTION_I', 'L', sub {$lexer->start('i'); $_[1] },
-	'ipf:OPENC_IPF', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
-	'i:OPENC_I', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
-	'pf:OPENC', '\\(', sub { ++$stack_level; $arglist[$stack_level] = []; $_[1] },
-	'pf:COMMA', '\s*,\s*', sub { $_[1] },
-	'pf:CLOSEC', '\\)', sub { $_[1] },
-	'pf:ARG', '[^)\s,]+', sub { $_[1] },
-	'ERROR', '.*', sub { die "no idea what $_[1] means\n" }
-	);
+    Paula::parse_wml($ipf, ('start' => 'ipf'));
+}
 
-    Parse::Lex->exclusive('pf', 'ipf', 'i');
-    $lexer = Parse::Lex->new(@token);
-    
-    $lexer->from($ipf);
-    $lexer->start('ipf');
-    
-    $parser = new ipf_grammar();
-    $parser->YYParse(yylex => \&parse_lexer, yyerror => \&parse_error);
+sub parse_tc_cfg
+{
+    my ($tc_file) = @_;
+    my ($crn, @range, @palette);
+
+    open($wml, "<$tc_file");
+    my $tc_cfg = Paula::parse_wml($wml, ('start' => 'wml'));
+    close($wml);
+
+    # extract color ranges, and remap rgb string to array
+    for $crn (@{$tc_cfg->{'_children'}->{'[color_range]'}}) {
+	$crn = $crn->{_wml};
+	@range = split('\s*,\s*', $crn->{'rgb'});
+	$crn->{'rgb'} = [];
+	push @{$crn->{'rgb'}}, @range;
+	$main::color_ranges->{$crn->{'id'}} = $crn;
+    }
+
+    # extract color palettes, remap color strings to array
+    my $color_palettes = $tc_cfg->{'_children'}->{'[color_palette]'}->[0]->{_wml};
+    for $cpk (keys(%$color_palettes)) {
+	@palette = split('\s*,\s*', $color_palettes->{$cpk});
+	push @{$main::color_palettes->{$cpk}}, @palette;
+    }
+
+    print Dumper($main::color_palettes);
+    print Dumper($main::color_ranges);
 }

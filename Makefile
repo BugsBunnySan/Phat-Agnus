@@ -1,17 +1,18 @@
 EDITOR=emacs
 
 PRJ_FILES=Makefile ipf.yp phat_agnus.pl paula.pm wml.yp
-GIT_FILES=$(PRJ_FILES) ipf_grammar.pm wml_grammar.pm
+GRAMMAR_FILES=ipf_grammar.pm wml_grammar.pm
+GIT_FILES=$(PRJ_FILES) $(GRAMMAR_FILES)
 
 .PHONY: edit gitadd gitcommit gitpush
+
+all: $(GRAMMAR_FILES)
 
 %.pm: %.yp
 	yapp -m $(^:.pm=) -o $@ $^
 
-ipf_grammar.pm: ipf.yp
-	yapp -m ipf_grammar -o ipf_grammar.pm $^
 wml_grammar.pm: wml.yp
-	yapp -m wml_grammar -o wml_grammar.pm $^
+	yapp -v -s -m wml_grammar -o wml_grammar.pm $^
 
 edit: $(PRJ_FILES)
 	$(EDITOR) $^

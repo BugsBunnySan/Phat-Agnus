@@ -1,21 +1,51 @@
-%
-wml : comment wml
-    | preproc
-    | OPEN_TAG wml CLOSE_TAG { Paula::finalize_tag(); }
-    | assignment
-    |
-
-comment : HASH WML_SKIP
-
+%%
+# main wml grammar
+wml : wml_line wml
+    | wml_line
+    | ipf
+;
+wml_line : comment
+         | preproc NEWLINE
+         | open_tags wml close_tags NEWLINE
+         | assignment NEWLINE
+	 | NEWLINE
+;
+comment : HASH WML_SKIP NEWLINE_SKIP
+        | HASH NEWLINE_SKIP
+;
 preproc : PP_IFDEF PP_DEF
 	| PP_ENDIF
 	| PP_SKIP
+;
+open_tags : OPEN_TAG  { Paula::set_current_tag($_[1], 'replace') }
+	  | ADD_TAG  { Paula::set_current_tag($_[1], 'add') }
+;
+close_tags : CLOSE_TAG  { Paula::close_current_tag($_[1]) }
+;
+assignment : VAR EQUALS TEXT  { Paula::assign($_[1], $_[2]) }
+           | VAREQUALS TEXT   { $_[1] =~ s/=//; Paula::assign($_[1], $_[2]) }
+           | VAREQUALSTEXT   { my ($var, $text) = split('=', $_[1]); Paula::assign($var, $text) }
+;
 
-tag : OPEN_TAG { push @Paula::tag_stack, $_[1]; $Paula::tag_mode = 'replace'; $_[1] }
-    | ADD_TAG { push @Paula::tag_stack, $_[1]; $Paula::tag_mode = 'add'; $_[1] }
-    | CLOSE_TAG { $_[1]; }
+# imagepathfoo grammar
+ipf : image functions
+    | image
+    ;
+image : FILENAME_IPF { main::read_image($_[1]); return $_[1];  }
+      | FILENAME_I { main::read_image($_[1]); return $_[1];  }
+;
+functions : FUNCCALL func functions
+          | FUNCCALL func       
+    ;
 
-assignment : VAR EQUALS TEXT { Paula::assign($_[1], $_[2]); $_[2] }
-           | VAREQUALS TEXT  { $_[1] =~ s/=//; Paula::assign($_[1], $_[2]); $_[2] }
-           | VAREQUALSTEXT   { my ($var, $text) = split('=', $_[1]); Paula::assign($var, $text); $text }
-%
+arglist : COMMA arglist     { return main::get_args(); }
+        | ARG COMMA arglist { main::push_arg($_[1]); return main::get_args(); }
+        | ARG               { main::push_arg($_[1]); $_[1] }
+	|
+;
+
+func : FUNCTION_IPF OPENC_IPF ipf arglist CLOSEC { main::do_tag($_[1], $_[4]); }
+     | FUNCTION_I OPENC_I image arglist CLOSEC { main::do_tag($_[1], $_[4]); }
+     | FUNCTION OPENC arglist CLOSEC { main::do_tag($_[1], $_[3]); }
+;
+%%

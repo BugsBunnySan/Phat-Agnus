@@ -7,7 +7,7 @@
 #             ANY CHANGE MADE HERE WILL BE LOST !
 #
 ####################################################################
-package ipf_grammar;
+package wml_grammar;
 use vars qw ( @ISA );
 use strict;
 
@@ -501,181 +501,358 @@ sub new {
 [
 	{#State 0
 		ACTIONS => {
-			'FILENAME_IPF' => 1,
-			'FILENAME_I' => 3
+			'VAREQUALS' => 11,
+			'FILENAME_IPF' => 2,
+			'PP_IFDEF' => 5,
+			'PP_SKIP' => 4,
+			'VAR' => 18,
+			'ADD_TAG' => 7,
+			'PP_ENDIF' => 17,
+			'OPEN_TAG' => 19,
+			'HASH' => 8,
+			'FILENAME_I' => 20,
+			'VAREQUALSTEXT' => 9,
+			'NEWLINE' => 10
 		},
 		GOTOS => {
-			'ipf' => 2,
-			'image' => 4
+			'assignment' => 12,
+			'wml' => 1,
+			'ipf' => 3,
+			'preproc' => 14,
+			'image' => 13,
+			'wml_line' => 15,
+			'open_tags' => 6,
+			'comment' => 16
 		}
 	},
 	{#State 1
-		DEFAULT => -3
+		ACTIONS => {
+			'' => 21
+		}
 	},
 	{#State 2
-		ACTIONS => {
-			'' => 5
-		}
+		DEFAULT => -22
 	},
 	{#State 3
-		DEFAULT => -4
+		DEFAULT => -3
 	},
 	{#State 4
-		ACTIONS => {
-			'FUNCCALL' => 7
-		},
-		DEFAULT => -2,
-		GOTOS => {
-			'functions' => 6
-		}
+		DEFAULT => -13
 	},
 	{#State 5
-		DEFAULT => 0
+		ACTIONS => {
+			'PP_DEF' => 22
+		}
 	},
 	{#State 6
-		DEFAULT => -1
-	},
-	{#State 7
 		ACTIONS => {
-			'FUNCTION_IPF' => 8,
-			'FUNCTION' => 9,
-			'FUNCTION_I' => 11
+			'VAREQUALS' => 11,
+			'FILENAME_IPF' => 2,
+			'PP_IFDEF' => 5,
+			'PP_SKIP' => 4,
+			'PP_ENDIF' => 17,
+			'ADD_TAG' => 7,
+			'VAR' => 18,
+			'OPEN_TAG' => 19,
+			'HASH' => 8,
+			'FILENAME_I' => 20,
+			'VAREQUALSTEXT' => 9,
+			'NEWLINE' => 10
 		},
 		GOTOS => {
-			'func' => 10
+			'assignment' => 12,
+			'wml' => 23,
+			'ipf' => 3,
+			'preproc' => 14,
+			'image' => 13,
+			'wml_line' => 15,
+			'open_tags' => 6,
+			'comment' => 16
 		}
+	},
+	{#State 7
+		DEFAULT => -15
 	},
 	{#State 8
 		ACTIONS => {
-			'OPENC_IPF' => 12
+			'WML_SKIP' => 25,
+			'NEWLINE_SKIP' => 24
 		}
 	},
 	{#State 9
-		ACTIONS => {
-			'OPENC' => 13
-		}
+		DEFAULT => -19
 	},
 	{#State 10
-		ACTIONS => {
-			'FUNCCALL' => 7
-		},
-		DEFAULT => -6,
-		GOTOS => {
-			'functions' => 14
-		}
+		DEFAULT => -8
 	},
 	{#State 11
 		ACTIONS => {
-			'OPENC_I' => 15
+			'TEXT' => 26
 		}
 	},
 	{#State 12
 		ACTIONS => {
-			'FILENAME_IPF' => 1,
-			'FILENAME_I' => 3
-		},
-		GOTOS => {
-			'ipf' => 16,
-			'image' => 4
+			'NEWLINE' => 27
 		}
 	},
 	{#State 13
 		ACTIONS => {
-			'COMMA' => 18,
-			'ARG' => 19
+			'FUNCCALL' => 28
 		},
-		DEFAULT => -10,
+		DEFAULT => -21,
 		GOTOS => {
-			'arglist' => 17
+			'functions' => 29
 		}
 	},
 	{#State 14
-		DEFAULT => -5
+		ACTIONS => {
+			'NEWLINE' => 30
+		}
 	},
 	{#State 15
 		ACTIONS => {
-			'FILENAME_IPF' => 1,
-			'FILENAME_I' => 3
+			'VAREQUALS' => 11,
+			'FILENAME_IPF' => 2,
+			'PP_IFDEF' => 5,
+			'PP_SKIP' => 4,
+			'PP_ENDIF' => 17,
+			'VAR' => 18,
+			'ADD_TAG' => 7,
+			'OPEN_TAG' => 19,
+			'HASH' => 8,
+			'FILENAME_I' => 20,
+			'VAREQUALSTEXT' => 9,
+			'NEWLINE' => 10
 		},
+		DEFAULT => -2,
 		GOTOS => {
-			'image' => 20
+			'assignment' => 12,
+			'wml' => 31,
+			'ipf' => 3,
+			'preproc' => 14,
+			'image' => 13,
+			'wml_line' => 15,
+			'open_tags' => 6,
+			'comment' => 16
 		}
 	},
 	{#State 16
-		ACTIONS => {
-			'COMMA' => 18,
-			'ARG' => 19
-		},
-		DEFAULT => -10,
-		GOTOS => {
-			'arglist' => 21
-		}
+		DEFAULT => -4
 	},
 	{#State 17
-		ACTIONS => {
-			'CLOSEC' => 22
-		}
+		DEFAULT => -12
 	},
 	{#State 18
 		ACTIONS => {
-			'COMMA' => 18,
-			'ARG' => 19
-		},
-		DEFAULT => -10,
-		GOTOS => {
-			'arglist' => 23
+			'EQUALS' => 32
 		}
 	},
 	{#State 19
-		ACTIONS => {
-			'COMMA' => 24
-		},
-		DEFAULT => -9
+		DEFAULT => -14
 	},
 	{#State 20
-		ACTIONS => {
-			'COMMA' => 18,
-			'ARG' => 19
-		},
-		DEFAULT => -10,
-		GOTOS => {
-			'arglist' => 25
-		}
+		DEFAULT => -23
 	},
 	{#State 21
-		ACTIONS => {
-			'CLOSEC' => 26
-		}
+		DEFAULT => 0
 	},
 	{#State 22
-		DEFAULT => -13
+		DEFAULT => -11
 	},
 	{#State 23
-		DEFAULT => -7
+		ACTIONS => {
+			'CLOSE_TAG' => 33
+		},
+		GOTOS => {
+			'close_tags' => 34
+		}
 	},
 	{#State 24
-		ACTIONS => {
-			'COMMA' => 18,
-			'ARG' => 19
-		},
-		DEFAULT => -10,
-		GOTOS => {
-			'arglist' => 27
-		}
+		DEFAULT => -10
 	},
 	{#State 25
 		ACTIONS => {
-			'CLOSEC' => 28
+			'NEWLINE_SKIP' => 35
 		}
 	},
 	{#State 26
-		DEFAULT => -11
+		DEFAULT => -18
 	},
 	{#State 27
-		DEFAULT => -8
+		DEFAULT => -7
 	},
 	{#State 28
-		DEFAULT => -12
+		ACTIONS => {
+			'FUNCTION_IPF' => 38,
+			'FUNCTION' => 37,
+			'FUNCTION_I' => 36
+		},
+		GOTOS => {
+			'func' => 39
+		}
+	},
+	{#State 29
+		DEFAULT => -20
+	},
+	{#State 30
+		DEFAULT => -5
+	},
+	{#State 31
+		DEFAULT => -1
+	},
+	{#State 32
+		ACTIONS => {
+			'TEXT' => 40
+		}
+	},
+	{#State 33
+		DEFAULT => -16
+	},
+	{#State 34
+		ACTIONS => {
+			'NEWLINE' => 41
+		}
+	},
+	{#State 35
+		DEFAULT => -9
+	},
+	{#State 36
+		ACTIONS => {
+			'OPENC_I' => 42
+		}
+	},
+	{#State 37
+		ACTIONS => {
+			'OPENC' => 43
+		}
+	},
+	{#State 38
+		ACTIONS => {
+			'OPENC_IPF' => 44
+		}
+	},
+	{#State 39
+		ACTIONS => {
+			'FUNCCALL' => 28
+		},
+		DEFAULT => -25,
+		GOTOS => {
+			'functions' => 45
+		}
+	},
+	{#State 40
+		DEFAULT => -17
+	},
+	{#State 41
+		DEFAULT => -6
+	},
+	{#State 42
+		ACTIONS => {
+			'FILENAME_IPF' => 2,
+			'FILENAME_I' => 20
+		},
+		GOTOS => {
+			'image' => 46
+		}
+	},
+	{#State 43
+		ACTIONS => {
+			'COMMA' => 47,
+			'ARG' => 48
+		},
+		DEFAULT => -29,
+		GOTOS => {
+			'arglist' => 49
+		}
+	},
+	{#State 44
+		ACTIONS => {
+			'FILENAME_IPF' => 2,
+			'FILENAME_I' => 20
+		},
+		GOTOS => {
+			'ipf' => 50,
+			'image' => 13
+		}
+	},
+	{#State 45
+		DEFAULT => -24
+	},
+	{#State 46
+		ACTIONS => {
+			'COMMA' => 47,
+			'ARG' => 48
+		},
+		DEFAULT => -29,
+		GOTOS => {
+			'arglist' => 51
+		}
+	},
+	{#State 47
+		ACTIONS => {
+			'COMMA' => 47,
+			'ARG' => 48
+		},
+		DEFAULT => -29,
+		GOTOS => {
+			'arglist' => 52
+		}
+	},
+	{#State 48
+		ACTIONS => {
+			'COMMA' => 53
+		},
+		DEFAULT => -28
+	},
+	{#State 49
+		ACTIONS => {
+			'CLOSEC' => 54
+		}
+	},
+	{#State 50
+		ACTIONS => {
+			'COMMA' => 47,
+			'ARG' => 48
+		},
+		DEFAULT => -29,
+		GOTOS => {
+			'arglist' => 55
+		}
+	},
+	{#State 51
+		ACTIONS => {
+			'CLOSEC' => 56
+		}
+	},
+	{#State 52
+		DEFAULT => -26
+	},
+	{#State 53
+		ACTIONS => {
+			'COMMA' => 47,
+			'ARG' => 48
+		},
+		DEFAULT => -29,
+		GOTOS => {
+			'arglist' => 57
+		}
+	},
+	{#State 54
+		DEFAULT => -32
+	},
+	{#State 55
+		ACTIONS => {
+			'CLOSEC' => 58
+		}
+	},
+	{#State 56
+		DEFAULT => -31
+	},
+	{#State 57
+		DEFAULT => -27
+	},
+	{#State 58
+		DEFAULT => -30
 	}
 ],
                                   yyrules  =>
@@ -684,66 +861,141 @@ sub new {
 		 '$start', 2, undef
 	],
 	[#Rule 1
-		 'ipf', 2, undef
+		 'wml', 2, undef
 	],
 	[#Rule 2
-		 'ipf', 1, undef
+		 'wml', 1, undef
 	],
 	[#Rule 3
-		 'image', 1,
-sub
-#line 5 "ipf.yp"
-{ main::read_image($_[1]); return $_[1];  }
+		 'wml', 1, undef
 	],
 	[#Rule 4
-		 'image', 1,
-sub
-#line 6 "ipf.yp"
-{ main::read_image($_[1]); return $_[1];  }
+		 'wml_line', 1, undef
 	],
 	[#Rule 5
-		 'functions', 3, undef
+		 'wml_line', 2, undef
 	],
 	[#Rule 6
-		 'functions', 2, undef
+		 'wml_line', 4, undef
 	],
 	[#Rule 7
-		 'arglist', 2,
-sub
-#line 12 "ipf.yp"
-{ return main::get_args(); }
+		 'wml_line', 2, undef
 	],
 	[#Rule 8
-		 'arglist', 3,
-sub
-#line 13 "ipf.yp"
-{ main::push_arg($_[1]); return main::get_args(); }
+		 'wml_line', 1, undef
 	],
 	[#Rule 9
-		 'arglist', 1,
-sub
-#line 14 "ipf.yp"
-{ main::push_arg($_[1]); $_[1] }
+		 'comment', 3, undef
 	],
 	[#Rule 10
-		 'arglist', 0, undef
+		 'comment', 2, undef
 	],
 	[#Rule 11
-		 'func', 5,
-sub
-#line 18 "ipf.yp"
-{ main::do_tag($_[1], $_[4]); }
+		 'preproc', 2, undef
 	],
 	[#Rule 12
-		 'func', 5,
-sub
-#line 19 "ipf.yp"
-{ main::do_tag($_[1], $_[4]); }
+		 'preproc', 1, undef
 	],
 	[#Rule 13
+		 'preproc', 1, undef
+	],
+	[#Rule 14
+		 'open_tags', 1,
+sub
+#line 20 "wml.yp"
+{ Paula::set_current_tag($_[1], 'replace') }
+	],
+	[#Rule 15
+		 'open_tags', 1,
+sub
+#line 21 "wml.yp"
+{ Paula::set_current_tag($_[1], 'add') }
+	],
+	[#Rule 16
+		 'close_tags', 1,
+sub
+#line 23 "wml.yp"
+{ Paula::close_current_tag($_[1]) }
+	],
+	[#Rule 17
+		 'assignment', 3,
+sub
+#line 25 "wml.yp"
+{ Paula::assign($_[1], $_[2]) }
+	],
+	[#Rule 18
+		 'assignment', 2,
+sub
+#line 26 "wml.yp"
+{ $_[1] =~ s/=//; Paula::assign($_[1], $_[2]) }
+	],
+	[#Rule 19
+		 'assignment', 1,
+sub
+#line 27 "wml.yp"
+{ my ($var, $text) = split('=', $_[1]); Paula::assign($var, $text) }
+	],
+	[#Rule 20
+		 'ipf', 2, undef
+	],
+	[#Rule 21
+		 'ipf', 1, undef
+	],
+	[#Rule 22
+		 'image', 1,
+sub
+#line 34 "wml.yp"
+{ main::read_image($_[1]); return $_[1];  }
+	],
+	[#Rule 23
+		 'image', 1,
+sub
+#line 35 "wml.yp"
+{ main::read_image($_[1]); return $_[1];  }
+	],
+	[#Rule 24
+		 'functions', 3, undef
+	],
+	[#Rule 25
+		 'functions', 2, undef
+	],
+	[#Rule 26
+		 'arglist', 2,
+sub
+#line 41 "wml.yp"
+{ return main::get_args(); }
+	],
+	[#Rule 27
+		 'arglist', 3,
+sub
+#line 42 "wml.yp"
+{ main::push_arg($_[1]); return main::get_args(); }
+	],
+	[#Rule 28
+		 'arglist', 1,
+sub
+#line 43 "wml.yp"
+{ main::push_arg($_[1]); $_[1] }
+	],
+	[#Rule 29
+		 'arglist', 0, undef
+	],
+	[#Rule 30
+		 'func', 5,
+sub
+#line 47 "wml.yp"
+{ main::do_tag($_[1], $_[4]); }
+	],
+	[#Rule 31
+		 'func', 5,
+sub
+#line 48 "wml.yp"
+{ main::do_tag($_[1], $_[4]); }
+	],
+	[#Rule 32
 		 'func', 4,
 sub
-#line 20 "ipf.yp"
+#line 49 "wml.yp"
 { main::do_tag($_[1], $_[3]); }
 	]
 ],
@@ -751,7 +1003,7 @@ sub
     bless($self,$class);
 }
 
-#line 23 "ipf.yp"
+#line 51 "wml.yp"
 
 
 1;
