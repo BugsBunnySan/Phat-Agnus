@@ -48,29 +48,45 @@ in a standalone tool to aid UMC creators in their quest for awesome addons.
 Needs realtivly recent versions of Perl, ImageMagick&PerlMagick and Perl::Parse::Lex,
 optionaly Perl::Parse::Yapp (if you want to rebuild the grammar file).
 
-Fedora/Debian
-It should be straight forward to get the packages with yum on recent redhat-alike distros
-and not difficult to get the packages for debian-alike distros with apt/synaptic/...
+Linux:
+------
+Just yum install the following packages on redhat/rpm-like distros:
+perl perl-ParseLex ImageMagick-perl
 
-For Windows I would recommend Strawberry Perl:
+Or apt-get/synaptic install the corresponding packages on debian-like distros:
+perl perlmagick
+
+In both cases the automatic dependency resolution should take care of the additional
+packages (like for example ImageMagick itself).
+
+Windows:
+--------
+I would normally recommend Strawberry Perl:
 
 http://strawberryperl.com/
 
 It's pretty stable, recent and allows you to use the cpan tool to install additional
-packages. Building the perlmagick module might be a bit of work though.
+packages. Apparently ImageMagick can be installed from cpan using strawberry perl.
 
-Alternativly use ActivePerl
+If that doesn't work, you can try ActivePerl:
 
 http://www.activestate.com/activeperl
 
 since the windows ImageMagick distribution ships with a 'ppm' perlmagick module for
-ActivePerl. It's also stable and recent but it can't (afaik) use of cpan directly.
+ActivePerl. It's also stable and recent but it can't (afaik) use cpan directly.
+the Parse::Lex module should also be available from the activestate perl package manager.
 
-Alternativly alternative: reboot into linux ;)
+MacOSX:
+-------
+Perl should either be already installed or easily installable. The ImageMagick website suggest
+using MacPorts or you can download the distribution from their website:
+
+http://www.imagemagick.org/script/binary-releases.php#macosx
+
 
 For reference, this was build on, with and tested against:
 On: 
-    Fedora release 15 (Lovelock)
+    Fedora release 15 (Lovelock) (64bit)
 With:
     Perl v5.12.4 (perl-5.12.4-162.fc15.x86_64)
     ImageMagick 6.6.5-10 (ImageMagick.x86_64)
@@ -109,44 +125,53 @@ phat_agnus.pl <ipfWML> <outfile>
 <outfile>  the result of the ipfWML evaluation is written into this file (as a png,
            regardless of file extension)
 
-Additionaly, if your wesnoth installation isn't at '/usr/share/wesnoth', which is where
-it will search for images it can't directly find and the team_color.cfg file, you can
+Additionaly, if your wesnoth installation isn't at '/usr/share/wesnoth'you can
 set the environment variable WESNOTH_PATH to wherever your installation is.
+Phat-Agnus searches in that directory for images it can't find and also
+loads the team_color.cfg file from there.
 
 4.2 ipfwML
 ipfWML always starts with an image filename. 
 Image modifiers can be appended, some of which take ipfWML as arguments.
 After each modifier, another modifier can be appended, and so on.
 
+See http://wiki.wesnoth.org/ImagePathFunctionWML
+
+Note that due to the ~, () and possibly space characters in ipfWML, you'll probably want to
+enclose the string in single quotes to protect it from the shell (double quotes on windows).
+
 4.3 Notes
 Phat Agnus doesn't impose any limits on the length of the ipfWML string,
-although your shell might. Common cut off lengths are around 32767 characters
-on most *NIX systems and 8191 characters on windows.
+although your shell might. Common cut off lengths for commandlines are 
+around 32767 characters on most Unix systems and 8191 characters on windows.
 
 5. Examples
 ###########
+In the examples below using wesnoth images, assume you're in the
+wesnoth images directory, and/or WESNOTH_PATH points to your
+installation.
+
 5.1 The simplest example just copies input to output
 
 phat_agnus.pl foo.png bar.png
 
-5.2 Put a wesnoth general in front of a tent
-Assuming you are in .../path/to/wesnoth/data/core/images (or you set WESNOTH_PATH), this string:
+This is a good way to test if everything works
 
-"scenery/tent-fancy-red.png~BLIT(units/human-loyalists/general-leading.png~RC(magenta>red))"
+5.2 Put a wesnoth general in front of a tent
+
+'scenery/tent-fancy-red.png~BLIT(units/human-loyalists/general-leading.png~RC(magenta>red))'
 
 puts a recolored loyalist general in front of a fancy tent.
 
 5.3 Build the icon for WesNorth And South
-Again assuming you're in the .../data/core/images subdir of your wesnoth installation (or you set WESNOTH_PATH), this:
-
-"misc/blank-hex.png~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(0,-255,-255)~FL(), 5, 5)~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(-255,-255,0), 44, 5)~BLIT(wesnoth-icon.png~SCALE(24, 24), 23, 2)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>red)~SCALE(48,48), 0, 13)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>blue)~SCALE(48,48)~FL(), 24, 13)"
+'misc/blank-hex.png~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(0,-255,-255)~FL(), 5, 5)~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(-255,-255,0), 44, 5)~BLIT(wesnoth-icon.png~SCALE(24, 24), 23, 2)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>red)~SCALE(48,48), 0, 13)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>blue)~SCALE(48,48)~FL(), 24, 13)'
 
 builds a nice icon of two cavaliers on rearing horses facing each other underneath 
 the wesnoth icon.
 
 6. TODO
 #######
-Recheck the blit and scale functions for position mismatches with wesnoth
+- Recheck the blit and scale functions for position mismatches with wesnoth
 
 
 7. Implementation details
@@ -182,7 +207,7 @@ The grammar is pretty simple, and maybe using yapp here is a bit of an overkill,
 using regexes to parse nested, potentially recursive languages is no fun and one would
 probably end up implementing something like yapp's output by hand and waste a lot of time.
 
-The parser doesn't know anything about the individual modifiers. The recognition of the tags
+The parser doesn't know anything about the ipfWML individual modifiers. The recognition of the tags
 is of course neccessary, but is kept to the lexer. Everytime a modifier is completly parsed,
 an intermediate function (main::do_tag) is called, which uses a function table to execute the
 function associated with the modifier.
