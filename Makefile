@@ -1,7 +1,7 @@
 EDITOR=emacs
 
-PRJ_FILES=Makefile ipf.yp phat_agnus.pl paula.pm wml.yp
-GRAMMAR_FILES=ipf_grammar.pm wml_grammar.pm
+PRJ_FILES=Makefile README phat_agnus.pl paula.pm wml.yp
+GRAMMAR_FILES=wml_grammar.pm
 GIT_FILES=$(PRJ_FILES) $(GRAMMAR_FILES)
 
 .PHONY: edit gitadd gitcommit gitpush

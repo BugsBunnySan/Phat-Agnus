@@ -34,13 +34,83 @@ my $wesnoth_path;
 if (defined $ENV{"WESNOTH_PATH"}) {
     $wesnoth_path = $ENV{"WESNOTH_PATH"};
 } else {
-    $wesnoth_path = '/usr/local/share/wesnoth';
+    $wesnoth_path = '/usr/share/wesnoth';
 }
 
 push @main::wesnoth_paths, join('/', $wesnoth_path, 'images');
 push @main::wesnoth_paths, join('/', $wesnoth_path, 'data', 'core', 'images');
 my $tc_file = join('/', $wesnoth_path, 'data', 'core', 'team-colors.cfg');
 
+package Phat_Agnus::color;
+use POSIX qw(floor);
+sub new_from_str
+{
+    my ($cstr) = @_;
+    my $color = {};
+
+    $cstr =~ m/([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])/;
+    
+    @{$color}{('red', 'green', 'blue')} = map { hex($_) } ($1, $2, $3);
+
+    $color->{'cstr'} = $cstr;
+
+    return bless $color, __PACKAGE__;
+}
+
+sub new_from_rgb
+{
+    my ($r, $g, $b) = @_;
+    my $color = {};
+
+    @{$color}{('red', 'green', 'blue')} = map { int($_ + 0.5) } ($r, $g, $b);
+
+    $color->{'cstr'} = sprintf('%02X%02X%02X', @{$color}{('red', 'green', 'blue')});
+
+    return bless $color, __PACKAGE__;
+}
+
+sub new_from_rgb_norm
+{
+    my ($r, $g, $b) = @_;
+ 
+    return new_from_rgb(map { $_ * 255 } ($r, $g, $b));
+}
+
+sub get_avg
+{
+    my ($this) = @_;
+
+    return floor(($this->{'red'} + $this->{'green'} + $this->{'blue'}) / 3);
+}
+
+package Phat_Agnus::color_range;
+sub new
+{
+    my ($mid, $max, $min, $rep) = @_;
+    my $color_range = {};
+
+    $color_range->{'mid'} = Phat_Agnus::color::new_from_str($mid);
+    $color_range->{'max'} = Phat_Agnus::color::new_from_str($max);
+    $color_range->{'min'} = Phat_Agnus::color::new_from_str($min);
+    $color_range->{'rep'} = Phat_Agnus::color::new_from_str($rep);
+    
+    return bless $color_range, __PACKAGE__;
+}
+
+package Phat_Agnus::color_palette;
+sub new
+{
+    my (@colors) = @_;
+    my $color_palette = [];
+
+    for $c (@colors) {
+	push @$color_palette, Phat_Agnus::color::new_from_str($c);
+    }
+
+    return bless $color_palette, __PACKAGE__;
+}
+
+package main;
 
 %tag_table = (TC => \&to_do_nothing,
 	      PAL => \&to_do_nothing,
@@ -85,6 +155,8 @@ sub find_img
 	return $test_img if (-f $test_img);
     }
 
+    print STDERR "ERROR: image $img couldn't be found directly nor in @main::wesnoth_paths\n";
+
     return undef;
 }
 
@@ -119,15 +191,69 @@ sub do_nothing
     return;
 }
 
+sub recolor_range
+{
+    my ($tgt_range, $src_palette) = @_;
+    my ($c, $old_avg, $ref_avg, $new_r, $new_g, $new_b, %recolor_palette);
+    %recolor_palette = ();
+    $ref_avg = $src_palette->[0]->get_avg();
+
+    for $c (@$src_palette) {
+	$old_avg = $c->get_avg();
+	if (($ref_avg > 0) && ($old_avg <= $ref_avg)) {
+	    $old_rat = $old_avg / $ref_avg;
+	    $new_r = ($old_rat * $tgt_range->{'mid'}->{'red'}   + (1 - $old_rat) * $tgt_range->{'min'}->{'red'});
+	    $new_g = ($old_rat * $tgt_range->{'mid'}->{'green'} + (1 - $old_rat) * $tgt_range->{'min'}->{'green'});
+	    $new_b = ($old_rat * $tgt_range->{'mid'}->{'blue'}  + (1 - $old_rat) * $tgt_range->{'min'}->{'blue'});
+	} elsif ($ref_avg < 255) {
+	    $old_rat = (255 - $old_avg) / (255 - $ref_avg);
+	    $new_r = ($old_rat * $tgt_range->{'mid'}->{'red'}   + (1 - $old_rat) * $tgt_range->{'max'}->{'red'});
+	    $new_g = ($old_rat * $tgt_range->{'mid'}->{'green'} + (1 - $old_rat) * $tgt_range->{'max'}->{'green'});
+	    $new_b = ($old_rat * $tgt_range->{'mid'}->{'blue'}  + (1 - $old_rat) * $tgt_range->{'max'}->{'blue'});
+	} else {
+	    die "something went wrong with the color ranges";
+	}
+
+	$new_r = 255 if ($new_r > 255);
+	$new_g = 255 if ($new_g > 255);
+	$new_b = 255 if ($new_b > 255);
+
+	$recolor_palette{$c->{'cstr'}} = Phat_Agnus::color::new_from_rgb($new_r, $new_g, $new_b);
+    }
+
+    return \%recolor_palette;
+}
+
 sub do_recolor
 {
     my ($mapstr) = @_;
+    my ($r, $g, $b, $a);
+    my ($w, $h) = $main::image_stack[0]->Get('columns', 'rows');
 
-    my ($map_src, $map_tgt) = split('>', $mapstr);
-
-    #my $mapping = mk_color_range($map_src, $map_tgt);
-
+    my ($src_palette, $tgt_range) = split('>', $mapstr);
     
+    $tgt_range   = $main::color_ranges->{$tgt_range};
+    $src_palette = $main::color_palettes->{$src_palette};
+
+    my $mapping = recolor_range($tgt_range, $src_palette);
+
+    my @pixels = $main::image_stack[0]->GetPixels(width => $w, height => $h, map => 'RGBA', normalize => 'true');
+
+    for ($iw = 0; $iw < $w; ++$iw) {
+	for ($ih = 0; $ih < $h; ++$ih) {
+	    my $idx = ($iw * 4) + ($ih * $w * 4); # * 4 => RGBA
+	    $a = $pixels[$idx+3];
+	    next if (!$a);
+	    $r = $pixels[$idx+0];
+	    $g = $pixels[$idx+1];
+	    $b = $pixels[$idx+2];
+	    $cstr = Phat_Agnus::color::new_from_rgb_norm($r, $g, $b)->{'cstr'};
+	    if (defined $mapping->{$cstr}) {
+		@new_colors = map { $_ / 255 } (@{$mapping->{$cstr}}{('red', 'green', 'blue')});
+		$main::image_stack[0]->SetPixel(geometry => sprintf('0x0+%d+%d', $iw, $ih), color => [@new_colors, $a]);
+	    }
+	}
+    }
 }
 
 sub do_color_shift
@@ -356,18 +482,13 @@ sub parse_tc_cfg
     for $crn (@{$tc_cfg->{'_children'}->{'[color_range]'}}) {
 	$crn = $crn->{_wml};
 	@range = split('\s*,\s*', $crn->{'rgb'});
-	$crn->{'rgb'} = [];
-	push @{$crn->{'rgb'}}, @range;
-	$main::color_ranges->{$crn->{'id'}} = $crn;
+	$main::color_ranges->{$crn->{'id'}} = Phat_Agnus::color_range::new(@range);
     }
 
     # extract color palettes, remap color strings to array
     my $color_palettes = $tc_cfg->{'_children'}->{'[color_palette]'}->[0]->{_wml};
     for $cpk (keys(%$color_palettes)) {
 	@palette = split('\s*,\s*', $color_palettes->{$cpk});
-	push @{$main::color_palettes->{$cpk}}, @palette;
+	$main::color_palettes->{$cpk} =  Phat_Agnus::color_palette::new(@palette);
     }
-
-    print Dumper($main::color_palettes);
-    print Dumper($main::color_ranges);
 }
