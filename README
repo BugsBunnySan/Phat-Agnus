@@ -16,6 +16,14 @@ Copyright (c) 2011 Sebastian Haas
 
  See the COPYING file for more details.
 
+uses buildin Parse::Yapp, so:
+The Parse::Yapp module and its related modules and shell scripts are copyright
+(c) 1998-2001 Francois Desarmenien, France. All rights reserved.
+
+You may use and distribute them under the terms of either
+the GNU General Public License or the Artistic License,
+as specified in the Perl README file.
+
 Contents:
 1. What does it do?
 2. Requirements
@@ -101,6 +109,10 @@ phat_agnus.pl <ipfWML> <outfile>
 <outfile>  the result of the ipfWML evaluation is written into this file (as a png,
            regardless of file extension)
 
+Additionaly, if your wesnoth installation isn't at '/usr/share/wesnoth', which is where
+it will search for images it can't directly find and the team_color.cfg file, you can
+set the environment variable WESNOTH_PATH to wherever your installation is.
+
 4.2 ipfwML
 ipfWML always starts with an image filename. 
 Image modifiers can be appended, some of which take ipfWML as arguments.
@@ -134,8 +146,8 @@ the wesnoth icon.
 
 6. TODO
 #######
-Implement the remaining modifiers
 Recheck the blit and scale functions for position mismatches with wesnoth
+
 
 7. Implementation details
 #########################

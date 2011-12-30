@@ -14,6 +14,15 @@
 
 # See the COPYING file for more details.
 
+# uses buildin Parse::Yapp, so:
+# The Parse::Yapp module and its related modules and shell scripts are copyright
+# (c) 1998-2001 Francois Desarmenien, France. All rights reserved.
+
+# You may use and distribute them under the terms of either
+# the GNU General Public License or the Artistic License,
+# as specified in the Perl README file.
+
+
 use Image::Magick;
 use Data::Dumper;
 
