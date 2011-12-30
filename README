@@ -34,10 +34,6 @@ http://wiki.wesnoth.org/ImagePathFunctionWML
 
 in a standalone tool to aid UMC creators in their quest for awesome addons.
 
-Currently missing are all the palette based operators (TC, RC, PAL).
-If these are encountered by the program, they won't give any errors, 
-they'll just not do anything yet.
-
 2. Requirements
 ###############
 
@@ -130,7 +126,7 @@ puts a recolored loyalist general in front of a fancy tent. (Since ~RC isn't imp
 the recoloring bit is currently a lie...)
 
 5.3 Build the icon for WesNorth And South
-Again assuming you're in the .../data/core/images subdir of your wesnoth installation, this:
+Again assuming you're in the .../data/core/images subdir of your wesnoth installation (or you set WESNOTH_PATH), this:
 
 "misc/blank-hex.png~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(0,-255,-255)~FL(), 5, 5)~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(-255,-255,0), 44, 5)~BLIT(wesnoth-icon.png~SCALE(24, 24), 23, 2)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>red)~SCALE(48,48), 0, 13)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>blue)~SCALE(48,48)~FL(), 24, 13)"
 

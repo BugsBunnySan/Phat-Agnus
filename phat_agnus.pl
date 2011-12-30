@@ -112,10 +112,10 @@ sub new
 
 package main;
 
-%tag_table = (TC => \&to_do_nothing,
-	      PAL => \&to_do_nothing,
-	      NOP => \&do_nothing,
+%tag_table = (NOP => \&do_nothing,
+	      TC => \&do_teamcolor,
 	      RC => \&do_recolor,
+	      PAL => \&do_palette_switch,
 	      CS => \&do_color_shift,
 	      R => \&do_r_shift,
 	      G => \&do_g_shift,
@@ -224,18 +224,12 @@ sub recolor_range
     return \%recolor_palette;
 }
 
-sub do_recolor
+sub vodo_recolor
 {
-    my ($mapstr) = @_;
+    my ($mapping) = @_;
     my ($r, $g, $b, $a);
+    my ($iw, $ih);
     my ($w, $h) = $main::image_stack[0]->Get('columns', 'rows');
-
-    my ($src_palette, $tgt_range) = split('>', $mapstr);
-    
-    $tgt_range   = $main::color_ranges->{$tgt_range};
-    $src_palette = $main::color_palettes->{$src_palette};
-
-    my $mapping = recolor_range($tgt_range, $src_palette);
 
     my @pixels = $main::image_stack[0]->GetPixels(width => $w, height => $h, map => 'RGBA', normalize => 'true');
 
@@ -254,6 +248,46 @@ sub do_recolor
 	    }
 	}
     }
+}
+
+sub do_teamcolor
+{
+    my ($tn, $src_palette) = @_;
+
+    $src_palette = $main::color_palettes->{$src_palette};
+    my $tgt_range = $main::color_ranges->{$tn};
+
+    my $mapping = recolor_range($tgt_range, $src_palette);
+
+    vodo_recolor($mapping);
+}
+
+sub do_recolor
+{
+    my ($mapstr) = @_;
+
+    my ($src_palette, $tgt_range) = split('>', $mapstr);
+    
+    $src_palette = $main::color_palettes->{$src_palette};
+    $tgt_range   = $main::color_ranges->{$tgt_range};
+
+    my $mapping = recolor_range($tgt_range, $src_palette);
+
+    vodo_recolor($mapping);
+}
+
+sub do_palette_switch
+{
+    my ($mapstr) = @_;
+    my $mapping = {};
+    my ($src_palette, $tgt_palette) = split('>', $mapstr);
+
+    $src_palette = $main::color_palettes->{$src_palette};
+    $tgt_palette = $main::color_palettes->{$tgt_palette};
+
+    @{$mapping}{map { $_->{'cstr'} } @$src_palette} = @$tgt_palette;
+
+    vodo_recolor($mapping);
 }
 
 sub do_color_shift
@@ -305,6 +339,7 @@ sub do_grayscale
 sub do_lightmap
 {
     my ($r, $g, $b, $a);
+    my ($iw, $ih);
     my ($w, $h) = $main::image_stack[1]->Get('columns', 'rows');
 
     $main::image_stack[0]->Scale(width => $w, height => $h);
