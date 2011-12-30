@@ -4,7 +4,7 @@ PRJ_FILES=Makefile README phat_agnus.pl paula.pm wml.yp
 GRAMMAR_FILES=wml_grammar.pm
 GIT_FILES=$(PRJ_FILES) $(GRAMMAR_FILES) COPYING.txt
 
-.PHONY: edit gitadd gitcommit gitpush
+.PHONY: edit gitadd gitcommit gitpush dist
 
 all: $(GRAMMAR_FILES)
 

@@ -54,7 +54,7 @@ Just yum install the following packages on redhat/rpm-like distros:
 perl perl-ParseLex ImageMagick-perl
 
 Or apt-get/synaptic install the corresponding packages on debian-like distros:
-perl perlmagick
+perl perlmagick <whatever the parselex module is called>
 
 In both cases the automatic dependency resolution should take care of the additional
 packages (like for example ImageMagick itself).
