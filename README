@@ -122,8 +122,7 @@ Assuming you are in .../path/to/wesnoth/data/core/images (or you set WESNOTH_PAT
 
 "scenery/tent-fancy-red.png~BLIT(units/human-loyalists/general-leading.png~RC(magenta>red))"
 
-puts a recolored loyalist general in front of a fancy tent. (Since ~RC isn't implemented yet,
-the recoloring bit is currently a lie...)
+puts a recolored loyalist general in front of a fancy tent.
 
 5.3 Build the icon for WesNorth And South
 Again assuming you're in the .../data/core/images subdir of your wesnoth installation (or you set WESNOTH_PATH), this:
@@ -131,8 +130,7 @@ Again assuming you're in the .../data/core/images subdir of your wesnoth install
 "misc/blank-hex.png~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(0,-255,-255)~FL(), 5, 5)~BLIT(misc/flag-white.png~CROP(5,0,21,24)~CS(-255,-255,0), 44, 5)~BLIT(wesnoth-icon.png~SCALE(24, 24), 23, 2)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>red)~SCALE(48,48), 0, 13)~BLIT(units/human-loyalists/cavalier-defend.png~RC(magenta>blue)~SCALE(48,48)~FL(), 24, 13)"
 
 builds a nice icon of two cavaliers on rearing horses facing each other underneath 
-the wesnoth icon. (And again, since ~RC isn't done yet, the two cavaliers will both be
-on Team Telekom ;) )
+the wesnoth icon.
 
 6. TODO
 #######
